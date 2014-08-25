@@ -27,7 +27,10 @@ class Center(Point, Environment):
         self._Neighbours = []
         self._Corners = []
     def addNeighbour(self, neighbour):
+        if not isinstance(neighbour, Center):
+            raise(TypeError)
         self._Neighbours.append(neighbour)
+        neighbour._Neighbours.append(self)
     def addBorder(self, border):
         self._Borders.append(border)
     def addCorner(self, corner):
