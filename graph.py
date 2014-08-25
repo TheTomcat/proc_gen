@@ -14,13 +14,13 @@ class Environment(object):
             raise(KeyError)
 
 class Center(Point, Environment):
-    # index
-    # coordinate
-    # BiomeData (bool lists)
-    # Moisture and Elevation (perlin driven)
-    # Neighbours (list of Centers)
-    # Borders (list of Edges)
-    # Corners (list of Corners)
+    # x index
+    # v coordinate
+    # v BiomeData (bool lists)
+    # x Moisture and Elevation (perlin driven)
+    # v Neighbours (list of Centers)
+    # v Borders (list of Edges)
+    # v Corners (list of Corners)
     def __init__(self, loc):
         super().__init__(loc)
         self._Borders = []
@@ -40,17 +40,17 @@ class Center(Point, Environment):
         return self._Borders
 
 class Corner(Point, Environment):
-    # index
-    # coordinate
-    # BiomeData (bool list)
-    # Moisture and Elevation (perlin driven)
-    # Touches (list of Centers)
-    # Protrudes (list of Edges)
-    # Adjacent (list of Corners)
-    # River 0 if no river, or volume of water in river
-    # downslope (Corner) adjacent down-hill corner
-    # watershed (Corner) coastal corner or None
-    # watershed size (int)
+    # x index
+    # v coordinate
+    # v BiomeData (bool list) --> From Environment
+    # x Moisture and Elevation (perlin driven)
+    # v Touches (list of Centers)
+    # v Protrudes (list of Edges)
+    # v Adjacent (list of Corners)
+    # o River 0 if no river, or volume of water in river
+    # o downslope (Corner) adjacent down-hill corner
+    # o watershed (Corner) coastal corner or None
+    # o watershed size (int)
     def __init__(self, loc):
         super().__init__(loc)
         self._Touches = []
@@ -75,9 +75,13 @@ class Edge(object):
     def __init__(self, loc):
         pass
     def setDelaunayEdge(self, d0, d1):
+        if not isinstance(d0, Center) or not isinstance(d1, Center):
+            raise(TypeError)
         self._delaunay = [d0,d1]
     def setVoronoiEdge(self, v0, v1):
+        if not isinstance(v0, Corner) or not isinstance(v1, Corner):
+            raise(TypeError)
         self._voronoi = [v0, v1]
         self._midpoint = bisect(v0,v1)
     
-    
+
