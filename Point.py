@@ -46,9 +46,6 @@ class Point(object):
     __ne__=lambda self, other: not self.__eq__(other)
     __lt__=lambda self, other: self.mag2() < other.mag2()
 
-    def orderByX(self):
-        self.__eq__ = lambda self, other: False
-    
     def close(self, other, tol=0.01):
         return math.fabs(self.mag2() - other.mag2()) <= 0.01
     def mag(self):
