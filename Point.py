@@ -17,6 +17,7 @@ def bisect(Point1, Point2):
 
 mag_key = lambda P: [P.mag2()]
 xyz_key = lambda P: list(P.get_loc())
+yx_key = lambda P: [P.get_loc()[i] for i in [1,0]]
     
 @functools.total_ordering
 class Point(object):
