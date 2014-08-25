@@ -2,9 +2,8 @@
 import numpy, math
 from Point import *
 
-class EnvironmentalPoint(Point):
+class Environment(object):
     def __init__(self, loc):
-        super().__init__(loc)
         self._environment = {}
     def set_environment(self, env, setas):
         self._environment[environment]=setas
@@ -14,7 +13,7 @@ class EnvironmentalPoint(Point):
         else:
             raise(KeyError)
 
-class Center(EnvironmentalPoint):
+class Center(Point, Environment):
     # index
     # coordinate
     # BiomeData (bool lists)
@@ -40,7 +39,7 @@ class Center(EnvironmentalPoint):
     def Borders(self):
         return self._Borders
 
-class Corner(EnvironmentalPoint):
+class Corner(Point, Environment):
     # index
     # coordinate
     # BiomeData (bool list)

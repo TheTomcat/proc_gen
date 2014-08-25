@@ -47,14 +47,22 @@ class Point(object):
     __lt__=lambda self, other: self.mag2() < other.mag2()
 
     def close(self, other, tol=0.01):
-        return math.fabs(self.mag2() - other.mag2()) <= 0.01
+        return math.fabs(self.mag2() - other.mag2()) <= tol*tol
     def mag(self):
         return math.sqrt(self.mag2())
     def mag2(self):
-        return sum([i*i for i in self._coordinate])
+        return sum(i*i for i in self._coordinate)
     def dim(self):
         return self._dim
     def same_dim(self, other):
         return self._dim == other._dim
     
-
+##class LocalCoordinates(object):
+##    To be done later... 
+##    def __init__(self, localDimensions, globalDimensions):
+##        assert
+##        self._localDim = localDimensions
+##        self._globalDim = globalDimensions
+        
+    
+        
