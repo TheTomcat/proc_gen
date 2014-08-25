@@ -34,7 +34,7 @@ def cart_2D(lowerBounds, upperBounds, spacing=None, number=None):
     return points
 
 def perterbed_cart_2D(lowerBounds, upperBounds, spacing=None, number=None, r=0.1, seed=None):
-    points = grid2D(lowerBounds, upperBounds, spacing, number)
+    points = cart_2D(lowerBounds, upperBounds, spacing, number)
     random.seed(seed)
     for point in points:
         r_x = r * (2*random.random()-1)
@@ -53,4 +53,4 @@ def random_2D(lowerBounds, upperBounds, numPoints=50, seed=None):
     return points
 
 def lloyd_relaxation(points):
-    
+    pass
