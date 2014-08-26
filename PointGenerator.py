@@ -4,32 +4,32 @@ import math
 import random
 from Point import *
 
-def _checkInputs(lowerBounds, upperBounds, spacing, number, testDim=None):
+def _checkInputs(lowerBounds, upperBounds, spacing, num, testDim=None):
     if testDim is None:
         testDim = len(lowerBounds)
     if not (testDim == len(lowerBounds) == len(upperBounds)):
         raise(TypeError("All supplied arguments must be iterables of the same length."))
-    if spacing is None and number is None:
+    if spacing is None and num is None:
         raise(TypeError("Must specify either spacing or number and not both."))
-    if spacing is not None and number is not None:
+    if spacing is not None and num is not None:
         raise(TypeError("Must specify either spacing or number and not both."))
     if spacing is None:
-        if len(number) != testDim:
+        if len(num) != testDim:
             raise(TypeError("All supplied arguments must be iterables of the same length."))  
-    if number is None:
+    if num is None:
         if len(spacing)!=2:
             raise(TypeError("All supplied arguments must be iterables of the same length."))
 
-def cart_2D(lowerBounds, upperBounds, spacing=None, number=None):
-    _checkInputs(lowerBounds, upperBounds, spacing, number, 2)
-    if number is None:
-        number = [math.floor((u-l)/s)+1 for l,u,s in zip(lowerBounds,upperBounds,spacing)]
-    for x in numpy.linspace(lowerBounds[0], upperBounds[0], num=number[0]):
-        for y in numpy.linspace(lowerBounds[1], upperBounds[1], num=number[1]):
+def cart_2D(lowerBounds, upperBounds, spacing=None, num=None):
+    _checkInputs(lowerBounds, upperBounds, spacing, num, 2)
+    if num is None:
+        num = [math.floor((u-l)/s)+1 for l,u,s in zip(lowerBounds,upperBounds,spacing)]
+    for x in numpy.linspace(lowerBounds[0], upperBounds[0], num=num[0]):
+        for y in numpy.linspace(lowerBounds[1], upperBounds[1], num=num[1]):
             yield Point([x,y])
 
-def perterbed_cart_2D(lowerBounds, upperBounds, spacing=None, number=None, r=0.1, seed=None):
-    grid_points = cart_2D(lowerBounds, upperBounds, spacing, number, return_iterator=True)
+def perterbed_cart_2D(lowerBounds, upperBounds, spacing=None, num=None, r=0.1, seed=None):
+    grid_points = cart_2D(lowerBounds, upperBounds, spacing, num, return_iterator=True)
     random.seed(seed)
     for point in grid_points:
         r_x = r * (2*random.random()-1)
