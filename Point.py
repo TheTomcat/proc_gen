@@ -26,6 +26,10 @@ class Point(object):
         self._coordinate = numpy.array(loc)
         self._dim=len(loc)
 ##        self.index = next(Point.newid)
+    @classmethod
+    def fromscalars(cls, *args):
+        return cls(args)
+    
     def set_loc(self, loc, dimChange=False):
         if len(loc) != self._dim and not dimChange:
             raise(IndexError("Wrong number of dimensions."))
