@@ -12,12 +12,16 @@ def mul(Point1, r):
         return Point(r*Point1.get_loc())
     else:
         raise(TypeError("Cannot multiply Point by non-scalar."))
+
+def dot(Point1, Point2):
+    return sum([i*j for i,j in zip(Point1.get_loc(), Point2.get_loc())])
+
 def bisect(Point1, Point2):
     return Point1 + 0.5*(Point2-Point1)
 
 mag_key = lambda P: [P.mag2()]
 xyz_key = lambda P: list(P.get_loc())
-yx_key = lambda P: [P.get_loc()[i] for i in [1,0]]
+yx_key = lambda P: [-P.get_loc()[1], P.get_loc()[0]]
     
 @functools.total_ordering
 class Point(object):
@@ -62,12 +66,11 @@ class Point(object):
     def same_dim(self, other):
         return self._dim == other._dim
     
-##class LocalCoordinates(object):
-##    To be done later... 
+##class Field(object):
 ##    def __init__(self, localDimensions, globalDimensions):
-##        assert
 ##        self._localDim = localDimensions
 ##        self._globalDim = globalDimensions
-        
-    
-        
+##    #def checkLocal(self, Point):
+##        blah
+##    def setLocalLimits(self, namedTuple):
+##        blah

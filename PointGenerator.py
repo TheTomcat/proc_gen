@@ -37,13 +37,13 @@ def perterbed_cart_2D(lowerBounds, upperBounds, spacing=None, num=None, r=0.1, s
         point.move((r_x, r_y))
         yield point
 
-def random_2D(lowerBounds, upperBounds, numPoints=20, seed=None):
+def random_2D(lowerBounds, upperBounds, num=20, seed=None):
     random.seed(seed)
     r = random.random
     points = []
     if not (2 == len(lowerBounds) == len(upperBounds)):
         raise(TypeError("lowerBounds and upperBounds must be iterables of length 2."))
-    for i in range(numPoints):
+    for i in range(num):
         yield Point([l+r()*(u-l) for l,u in zip(lowerBounds, upperBounds)])
 
 def lloyd_relaxation(points):
