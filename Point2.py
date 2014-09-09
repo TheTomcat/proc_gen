@@ -3,33 +3,52 @@ import numpy, math
 import functools
 import itertools
 
-def add(Point1, Point2):
-    return Point(Point1.get_loc() + Point2.get_loc())
-def sub(Point1, Point2):
-    return Point(Point1.get_loc() - Point2.get_loc())
-def mul(Point1, r):
-    if isinstance(r, (int, float)):
-        return Point(r*Point1.get_loc())
-    else:
-        raise(TypeError("Cannot multiply Point by non-scalar."))
 
-def dot(Point1, Point2):
-    return sum([i*j for i,j in zip(Point1.get_loc(), Point2.get_loc())])
+class _Space(object):
+    def __init__(self):
+        pass
+    def add(self, p1, p2):
+        raise NotImplementedError
+    def sub(self, p1, p2):
+        raise NotImplementedError
+    def mul(self, p1, p2):
+        raise NotImplementedError
 
-def bisect(Point1, Point2):
-    return Point1 + 0.5*(Point2-Point1)
+class _Euclidean(_Space):
+    def __init__(self):
+        pass
+    def add(Point1, Point2):
+        return Point(Point1.get_loc() + Point2.get_loc())
+    def sub(Point1, Point2):
+        return Point(Point1.get_loc() - Point2.get_loc())
+    def mul(Point1, r):
+        if isinstance(r, (int, float)):
+            return Point(r*Point1.get_loc())
+        else:
+            raise(TypeError("Cannot multiply Point by non-scalar."))
+    def dot(Point1, Point2):
+        return sum([i*j for i,j in zip(Point1.get_loc(), Point2.get_loc())])
+    def bisect(Point1, Point2):
+        return Point1 + 0.5*(Point2-Point1)
+    mag_key = lambda P: [P.mag2()]
+    xyz_key = lambda P: list(P.get_loc())
+    yx_key = lambda P: [-P.get_loc()[1], P.get_loc()[0]]
 
-mag_key = lambda P: [P.mag2()]
-xyz_key = lambda P: list(P.get_loc())
-yx_key = lambda P: [-P.get_loc()[1], P.get_loc()[0]]
-    
+
+Euclidean = _Euclidean
+##Sphere = _Spherical
+
 @functools.total_ordering
 class Point(object):
 ##    newid = itertools.count()
-    def __init__(self, loc):
+    def __init__(self, loc, space=Euclidean):
         self._coordinate = numpy.array(loc)
         self._dim=len(loc)
 ##        self.index = next(Point.newid)
+        for attr in dir(space):
+            if attr[0:2]=="__":
+                continue
+            self.__setattr__(attr, space.__getattribute__(attr))
     @classmethod
     def fromscalars(cls, *args):
         return cls(args)
@@ -47,9 +66,9 @@ class Point(object):
         self._coordinate = mul(self._coordinate, r)
     def __repr__(self):
         return "Point([" + ", ".join([str(i) for i in self._coordinate]) + "])"
-    __add__ = add
-    __sub__ = sub
-    __mul__ = mul
+##    __add__ = space.add
+##    __sub__ = space.sub
+##    __mul__ = space.mul
     __rmul__=lambda self, other: self.__mul__(other)
     __eq__=lambda self, other: all(self._coordinate == other._coordinate)
     __ne__=lambda self, other: not self.__eq__(other)
