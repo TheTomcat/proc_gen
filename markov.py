@@ -1,22 +1,11 @@
 import random
 from itertools import islice, chain
 from collections import deque, defaultdict
-
+from tools import window
 class startMarker():
     pass
 class endMarker():
     pass
-
-def window(seq, n=2):
-    "Returns a sliding window (of width n) over data from the iterable"
-    "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
-    it = iter(seq)
-    result = tuple(islice(it, n))
-    if len(result) == n:
-        yield result    
-    for elem in it:
-        result = result[1:] + (elem,)
-        yield result
 
 class Markov(object):
     """
@@ -28,6 +17,7 @@ class Markov(object):
                @param [noteStarts] forces generation to begin at 
     """
     def __init__(self, keySize=2, noteStarts=False, noteEnds=False):
+        self.R = random.Random()
         self.dict = defaultdict(list)
         self.starting = []
         self.keySize = keySize
@@ -87,41 +77,59 @@ class Markov(object):
                 loop_over = get_atom(molecule)
             for atoms in window(loop_over,self.keySize+1):
                 self.addKey(atoms[:-1],atoms[-1])
-
+    def set_seed(self, seed):
+        self.seed=seed
+        self.R.seed(seed)
     def makeSentence(self,maxlen=50, joinwith=None):
         if self.noteStarts:
-            key = deque(random.choice(self.starting))
+            key = deque(self.R.choice(self.starting))
         else:
-            key = deque(random.choice(list(self.dict.keys())))
+            key = deque(self.R.choice(list(self.dict.keys())))
         message = [i for i in key]
         i=0
         while i<maxlen:
             i+=1
             try:
-                newWord = random.choice(self.get(key))
+                newWord = self.R.choice(self.get(key))
                 message.append(newWord)
                 key.popleft()
                 key.append(newWord)
             except IndexError:
-                break
+                continue
         if joinwith is not None:
             message = joinwith.join(message)
         return message
 
-with open("D:\\Github\\proc_gen\\artofwar.txt") as f:
+with open("D:\\Github\\proc_gen\\markov\\artofwar.txt") as f:
     text = f.read().lower().replace("\n","")
     G = Markov(5)
     G.parseText(text.split(". "))
 
-with open("D:\\Github\\proc_gen\\artofwar.txt") as f:
-    text = f.read().lower()
-    W = Markov(5)
-    W.parseText(text)
+with open("D:\\Github\\proc_gen\\markov\\russia.txt") as f:
+    text = f.read().lower().split("\n")
+    R = Markov(3, noteStarts=True)
+    R.parseText(text)
 
-with open("D:\\Github\\proc_gen\\stars.txt") as f:
+with open("D:\\Github\\proc_gen\\markov\\stars.txt") as f:
     text = f.read().lower().split(", ")
     P = Markov(4)
     P.parseText(text)
+
+with open("D:\\Github\\proc_gen\\markov\\greek.txt") as f:
+    text = f.read().lower().split("\n")
+##    text = [i.strip() for i in text]
+    Q = Markov(3,noteStarts=True)
+    Q.parseText(text)
+
+with open("D:\\Github\\proc_gen\\markov\\dutch_town.txt") as f:
+    text = f.read().lower().replace(" \n","\n").split("\n")
+    D = Markov(3,noteStarts=True)
+    D.parseText(text)
+
+with open("D:\\Github\\proc_gen\\markov\\swedish.txt") as f:
+    text = f.read().lower().replace(" \n","\n").split("\n")
+    Sw = Markov(3,noteStarts=True)
+    Sw.parseText(text)
 ##text = text.replace(". "," ")
 ##M = Markov(4)
 ##M.parseText(text.split(" "))
@@ -134,11 +142,11 @@ with open("D:\\Github\\proc_gen\\stars.txt") as f:
 ##PERSONAL USE ONLY, AND (2) ARE NOT DISTRIBUTED OR USED
 ##COMMERCIALLY.  PROHIBITED COMMERCIAL DISTRIBUTION INCLUDES BY ANY
 ##SERVICE THAT CHARGES FOR DOWNLOAD TIME OR FOR MEMBERSHIP.>>"""
-##with open("D:\\Github\\proc_gen\\shakespear.txt") as f:
+##with open("D:\\Github\\proc_gen\\markov\\shakespear.txt") as f:
 ##    text = f.read().lower()
 ##    text = text.replace(cr,"")
 ##    lines = [i.strip() for i in text.split("\n")]
-##    S = Markov(3)
+##    S = Markov(5, noteStarts=True)
 ##    S.parseText(lines)
 ##
 ##def test_getRandom():

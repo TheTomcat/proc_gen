@@ -5,6 +5,7 @@ import math
 import sys
 import numpy
 import bisect
+from tools import window
 
 CI_Mag_file = "D:\\Github\\proc_gen\\celest.csv"
 bbRGB_file = "D:\\Github\\proc_gen\\bbcolour.txt"
@@ -73,14 +74,18 @@ def run_extractors():
 # Load the json data
 celest_data,bb_data,exo_mass_data = loadData(json_file)
 
+average_number_planets = 1.6
+
 Earth = {"mass":5.97219E24,
          "density":5.510E3,
          "T_surface":288,
          "v_esc":11.19E3,
-         "radius":6378100}
+         "radius":6378100,
+         "semi_major_axis":1.49597890E11}
 
 Sun = {"mass":1.989E30,
-       "luminosity":3.846E26}
+       "luminosity":3.846E26,
+       "radius":6.955E8}
 
 M_e = 5.97219E24
 M_ej_rat = 317.828133 
@@ -88,7 +93,7 @@ M_j = M_e*M_ej_rat
 M_s = 1.989E30
 G = 6.67E-11
 L_s = 3.846E26 # Luminosity of the Sun
-AU = 149597870.7
+AU = 149597870700
 planet_mass_cat_num = [0.00001,0.1,0.5,2,10,50]
 planet_mass_cat_lab = ["Asteroidean","Mercurian","Subeterran",
                        "Terran","Superterran","Neptunian","Jovian"]
@@ -98,6 +103,9 @@ planet_TPHC_lab = ["Hypopsychroplanet","Psychroplanet","Mesoplanet",
 
 planet_HZC_num = [-1, 0, 1, 2]
 planet_HZC_lab = ["Iron", "Rocky-iron", "Rocky-water", "Water-gas", "Gas"]
+
+star_spect_num = [3500,5000,6000,7500,10000,25000]
+star_spect_lab = ["M","K","G","F","A","B","O"]
 
 def getRange(x, num, lab):
     if x <= num[0]:
@@ -109,13 +117,13 @@ def getRange(x, num, lab):
 massCat = lambda x: getRange(x, planet_mass_cat_num, planet_mass_cat_lab)
 TPHC = lambda x: getRange(x, planet_TPHC_num, planet_TPHC_lab)
 HZC_Class = lambda x: getRange(x, planet_HZC_num, planet_HZC_lab)
-
+Spectral_Type = lambda x: getRange(x, star_spect_num, star_spect_lab)
 
 def tohex(RGB):
-    return '#'+''.join([hex(i)[-2:] for i in RGB]).upper()
+    return '#'+''.join([("00"+str(hex(i)))[-2:] for i in RGB]).upper()
 
 # Number of planet (geometric distribution)
-def geom(rnd, mu=1.6):
+def geom(rnd, mu=average_number_planets):
     p=1/(1+mu)
     # CDF: 1-(1-p)**(n+1)
     # PDF: p*(1-p)**n
@@ -133,7 +141,9 @@ def percent(percent, rnd=None):
 ## BB interpolation
 def bb_interpolate(temp, bb_data=bb_data):
     if not (bb_data[0][0] <= temp <= bb_data[0][-1]):
-        raise ValueError("Temperature "+str(temp)+" out of range.")
+##        raise ValueError("Temperature "+str(temp)+" out of range.")
+##        print("Temp "+str(temp)+" out of range")
+        return bb_data[1][0]
     if temp in bb_data[0]:
         i = bb_data[0].index(temp)
         return bb_data[1][i]
@@ -182,11 +192,48 @@ def exoMassMapping(exomass=None):
 
 exo_mass_mapping = exoMassMapping()
 
+def kepSolve(e,M,x):
+    """http://murison.alpheratz.net/dynamics/twobody/KeplerIterations_summary.pdf"""
+    t1 = math.cos(x)
+    t2 = -1+e*t1
+    t3 = math.sin(x)
+    t4 = e*t3
+    t5 = -x+t4+M
+    t6 = t5/(1/2*t5*t4/t2+t2)
+    return t5/((1/2*t3 - 1/6*t1*t6)*e*t6+t2)
+def kepStart(e, M):
+    """http://murison.alpheratz.net/dynamics/twobody/KeplerIterations_summary.pdf"""
+    t34 = e**2
+    t35 = e*t34
+    t33 = math.cos(M)
+    return M + (-0.5*t35+e+(t34+3/2*t33*t35)*t33)*math.sin(M)
+def keplar(e,M,tol=1E-14):
+    M_n = math.fmod(M,2*math.pi)
+    E0 = kepStart(e,M_n)
+    dE = tol+1
+    i=0
+    while dE > tol:
+        E = E0 - kepSolve(e, M_n, E0)
+        E0 = E
+        dE = math.fabs(E-E0)
+        i+=1
+        if i > 100:
+            raise RuntimeError("Keplar loop has not converged!")
+    return E
+
 class OrbitingBody(object):
     def __init__(self, semi_major_axis, orbital_period):
         """Class that stores information about orbiting bodies"""
         self.a = semi_major_axis
         self.T = orbital_period
+    def getPos(self, t):
+        e=0.05
+        n = math.pi*2/self.orbital_period
+        M = n*t
+        E = keplar(e, M)
+        theta = math.atan(math.sqrt((1+e)/(1-e)*math.tan(E/2)**2))*2
+        r = self.semi_major_axis*(1-e*e)/(1+e*math.cos(theta))
+        return (r, theta)
 
 class Star(object):
     def __init__(self, pos=0, seed=None):
@@ -206,15 +253,16 @@ class Star(object):
         self.luminosity = self.relative_luminosity*Sun["luminosity"]
         self.numPlanets = geom(self.R.random())
 
-        X = self.R.normalvariate(0.0325746201, 0.2708663696)
+        X = self.R.normalvariate(-0.03469,2.46454)#0.0325746201, 0.2708663696)
         
-        self.metallicity = X - log(2.6)+log(self.numPlanets+1)
+        self.metallicity = X - log(1+average_number_planets)+log(self.numPlanets+1)
 
         E = (0.0049*self.metallicity-0.288)*self.colour_index-0.002*self.metallicity + 3.941
         self.temperature = 10**E
 
-        self.mass = 0.967*self.luminosity**0.255 + (5.19E-5)*self.luminosity - 0.0670
-        
+        #self.mass = 0.967*self.luminosity**0.255 + (5.19E-5)*self.luminosity - 0.0670
+        self.relative_mass = 0.967*self.relative_luminosity**0.255 + (5.19E-5)*self.relative_luminosity #- 0.0670
+        self.mass = self.relative_mass*Sun['mass']
         sigma = 5.670373E-8
         self.radius = math.sqrt(self.luminosity / (4*math.pi*self.temperature**4*sigma))
 
@@ -228,17 +276,33 @@ class Star(object):
         for n in range(self.numPlanets):
             self.Planets.append(Planet(self, seed=(self.R.random(),)))
         self.Planets.sort(key=lambda key: key.semi_major_axis)
-##    def normalisePlanetaryOrbits(self, ):
-##        
+        
+    def normalisePlanetaryOrbits(self, minSep=0.2*AU):
+        print("running orbital normalisation")
+        if self.radius + minSep >= Planets[0].semi_major_axis:
+            print("Planet IN star")
+            self.shiftOrbit(0, self.radius+minSep)
+        for i,(p1, p2) in enumerate(window(self.Planets)):
+            if p1.semi_major_axis + minSep >= p2.semi_major_axis:
+                self.shiftOrbit(i+1, p1.semi_major_axis+minSep)
+    def shiftOrbit(self, planet_index, new_orbit):
+        ratio = new_orbit/self.Planets[planet_index]
+        print("Orbital shift factor for planet {}:{}".format(planet_index, ratio))
+        for planet in self.Planets[planet_index:]:
+            planet.semi_major_axis *= ratio
+            planet.compute_SMA()
+        
     def pprint(self, Recursive=False):
         output = ["                    Seed : {}".format(self.seed),
                   "    Colour Index (B-V)_0 : {}".format(self.colour_index),
                   "  Absolute Magnitude M_v : {}".format(self.abs_mag),
                   "      Orbiting Planets n : {}".format(self.numPlanets),
                   "            Luminosity L : {}".format(self.luminosity),
+                  "                    L/L0 : {}".format(self.relative_luminosity),
                   "      Metallicity [Fe/H] : {}".format(self.metallicity),
                   "           Temperature T : {}".format(self.temperature),
-                  "      Relative Mass M/M0 : {}".format(self.mass),
+                  "                  Mass M : {}".format(self.mass),
+                  "      Relative Mass M/M0 : {}".format(self.relative_mass),
                   "                Radius R : {}".format(self.radius),
                   "                Colour C : {}".format(self.RGB),
                   "Habitable Zone HZ_i,HZ_o : {},{}".format(self.HzInner, self.HzOuter)]
@@ -269,17 +333,20 @@ class Planet(object):
         a = (0.453*self.mass**0.494) * 14.0184
         self.semi_major_axis =a* percent(10,self.R.random())
 
-        self.orbital_period = math.pi*2*math.sqrt(self.semi_major_axis**3/(G*(self.mass*M_j+self.star.mass*M_s)))
         self.albedo = albedo(self.R)
 
-        self.T_effective = self.star.temperature*math.sqrt(star.radius/(2*self.semi_major_axis))*(1-self.albedo)**(1/4)
-
+        self.escape_velocity = math.sqrt(2*G*self.mass/self.radius)
+        self.surface_grav = (self.mass/self.radius**2)/(Earth['mass']/Earth['radius']**2)
+        self.compute_SMA()
+        
+    def compute_SMA(self):
+        try:
+            self.orbital_period = math.pi*2*math.sqrt(self.semi_major_axis**3/(G*(self.mass+self.star.mass)))
+        except ValueError:
+            print(self.semi_major_axis, self.mass, self.star.mass, self.star.relative_luminosity)
+        self.T_effective = self.star.temperature*math.sqrt(self.radius/(2*self.semi_major_axis))*(1-self.albedo)**(1/4)
         self.T_surface = self.T_effective * (1 + self.albedo*0.517)
 
-        self.escape_velocity = math.sqrt(2*G*self.mass/self.radius)
-
-        self.surface_grav = (self.mass/self.radius**2)/(Earth['mass']/Earth['radius']**2)
-        
     def pprint(self, Recursive=False):
         output = ["                 Seed : {}".format(self.seed),
                   "                 Mass : {}".format(self.mass),
