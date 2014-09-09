@@ -3,30 +3,44 @@ import numpy, math
 import functools
 import itertools
 
-def add(Point1, Point2):
-    return Point(Point1.get_loc() + Point2.get_loc())
-def sub(Point1, Point2):
-    return Point(Point1.get_loc() - Point2.get_loc())
-def mul(Point1, r):
-    if isinstance(r, (int, float)):
-        return Point(r*Point1.get_loc())
-    else:
-        raise(TypeError("Cannot multiply Point by non-scalar."))
+Euclidean = _Euclidean
+Sphere = _Spherical
 
-def dot(Point1, Point2):
-    return sum([i*j for i,j in zip(Point1.get_loc(), Point2.get_loc())])
+class _Space(object):
+    def __init__(self):
+        pass
+    def add(self, p1, p2):
+        raise NotImplementedError
+    def sub(self, p1, p2):
+        raise NotImplementedError
+    def mul(self, p1, p2):
+        raise NotImplementedError
 
-def bisect(Point1, Point2):
-    return Point1 + 0.5*(Point2-Point1)
+class _Euclidean(_Space):
+    def __init__(self):
+        pass
+    def add(Point1, Point2):
+        return Point(Point1.get_loc() + Point2.get_loc())
+    def sub(Point1, Point2):
+        return Point(Point1.get_loc() - Point2.get_loc())
+    def mul(Point1, r):
+        if isinstance(r, (int, float)):
+            return Point(r*Point1.get_loc())
+        else:
+            raise(TypeError("Cannot multiply Point by non-scalar."))
+    def dot(Point1, Point2):
+        return sum([i*j for i,j in zip(Point1.get_loc(), Point2.get_loc())])
+    def bisect(Point1, Point2):
+        return Point1 + 0.5*(Point2-Point1)
 
-mag_key = lambda P: [P.mag2()]
-xyz_key = lambda P: list(P.get_loc())
-yx_key = lambda P: [-P.get_loc()[1], P.get_loc()[0]]
-    
+    mag_key = lambda P: [P.mag2()]
+    xyz_key = lambda P: list(P.get_loc())
+    yx_key = lambda P: [-P.get_loc()[1], P.get_loc()[0]]
+
 @functools.total_ordering
 class Point(object):
 ##    newid = itertools.count()
-    def __init__(self, loc):
+    def __init__(self, loc, space=Euclidean):
         self._coordinate = numpy.array(loc)
         self._dim=len(loc)
 ##        self.index = next(Point.newid)
